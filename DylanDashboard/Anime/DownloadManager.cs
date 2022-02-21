@@ -10,7 +10,7 @@ namespace DylanDashboard.Anime
         public event EventHandler<TorrentListUpdateEventArgs> TorrentListUpdated;
 
         private DownloadManager() {
-            GetTorrentList();
+            PollTorrentListAsync();
         }
 
         public static DownloadManager GetIntance()
@@ -22,9 +22,9 @@ namespace DylanDashboard.Anime
             return _instance;
         }
 
-        private async void GetTorrentList()
+        private async void PollTorrentListAsync()
         {
-            var listProcessInfo = new ProcessStartInfo("transmission-remote", "localhost:9091 --list")
+            var listProcessInfo = new ProcessStartInfo("transmission-remote", "--list")
             {
                 CreateNoWindow = true,
                 RedirectStandardOutput = true,
@@ -40,7 +40,7 @@ namespace DylanDashboard.Anime
                     Torrents = null
                 });
                 await Task.Delay(10000);
-                GetTorrentList();
+                PollTorrentListAsync();
                 return;
             }
 
@@ -55,7 +55,6 @@ namespace DylanDashboard.Anime
                 if (outLine != null && !headerRegex.IsMatch(outLine) && !sumRegex.IsMatch(outLine))
                 {
                     var torrentData = Regex.Split(outLine.Trim(), @"\s\s+");
-                    Debug.WriteLine($"GetTorrentList: { outLine }");
                     torrents.Add(new Torrent()
                     {
                         Id = Convert.ToInt32(torrentData[0]),
@@ -72,9 +71,20 @@ namespace DylanDashboard.Anime
                 outLine = await listProcess.StandardOutput.ReadLineAsync();
             }
 
+            foreach (var torrent in torrents)
+            {
+                if (torrent.Status == "Seeding" || torrent.Status == "Idle")
+                {
+                    var removeProcessInfo = new ProcessStartInfo("transmission-remote", $"-t { torrent.Id } --remove")
+                    {
+                        CreateNoWindow = true
+                    };
+                    await Process.Start(removeProcessInfo).WaitForExitAsync();
+                }
+            }
+
             if (listProcess.ExitCode != 0)
             {
-                Debug.WriteLine($"GetTorrentListError: { error }");
                 TorrentListUpdated?.Invoke(this, new TorrentListUpdateEventArgs()
                 {
                     Error = error,
@@ -91,7 +101,7 @@ namespace DylanDashboard.Anime
             }
 
             await Task.Delay(10000);
-            GetTorrentList();
+            PollTorrentListAsync();
         }
     }
 

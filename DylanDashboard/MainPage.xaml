@@ -1,10 +1,34 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:local="clr-namespace:DylanDashboard"
+             xmlns:uiutils="clr-namespace:DylanDashboard.UIUtils"
              x:Class="DylanDashboard.MainPage"
              BackgroundColor="{DynamicResource SecondaryColor}">
-
+    <ContentPage.Resources>
+        <ResourceDictionary>
+            <uiutils:OptionalStringDecrementerConverter x:Key="optStringDec" />
+            <uiutils:OptionalStringIncrementerConverter x:Key="optStringInc" />
+        </ResourceDictionary>
+    </ContentPage.Resources>
+    <ContentPage.BindingContext>
+        <local:MainPageViewModel />
+    </ContentPage.BindingContext>
     <ScrollView>
         <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="auto" />
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="auto" />
+            </Grid.ColumnDefinitions>
+            <Label Grid.Row="0"
+                   Grid.Column="0"
+                   Text="{Binding TorrentListError}" />
+            <ListView Grid.Row="{Binding TorrentListError, Converter={StaticResource optStringInc}, ConverterParameter=0}"
+                      Grid.RowSpan="{Binding TorrentListError, Converter={StaticResource optStringDec}, ConverterParameter=2}"
+                      Grid.Column="0"
+                      ItemsSource="{Binding TorrentList}" />
         </Grid>
     </ScrollView>
 </ContentPage>
