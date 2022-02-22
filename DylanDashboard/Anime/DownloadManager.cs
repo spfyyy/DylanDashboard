@@ -7,10 +7,14 @@ namespace DylanDashboard.Anime
     {
         private static DownloadManager _instance;
 
+        private bool _isPolling;
+
         public event EventHandler<TorrentListUpdateEventArgs> TorrentListUpdated;
 
+        public event EventHandler<DownloadFilesUpdateEventArgs> DownloadFilesUpdated;
+
         private DownloadManager() {
-            PollTorrentListAsync();
+            _isPolling = false;
         }
 
         public static DownloadManager GetIntance()
@@ -20,6 +24,17 @@ namespace DylanDashboard.Anime
                 _instance = new DownloadManager();
             }
             return _instance;
+        }
+
+        public void StartPolling()
+        {
+            if (_isPolling)
+            {
+                return;
+            }
+            _isPolling = true;
+            PollTorrentListAsync();
+            PollDownloadFilesAsync();
         }
 
         private async void PollTorrentListAsync()
@@ -73,13 +88,13 @@ namespace DylanDashboard.Anime
 
             foreach (var torrent in torrents)
             {
-                if (torrent.Status == "Seeding" || torrent.Status == "Idle")
+                if (torrent.Status == "Seeding" || (torrent.CompletePercentage == 100 && torrent.Status == "Idle"))
                 {
                     var removeProcessInfo = new ProcessStartInfo("transmission-remote", $"-t { torrent.Id } --remove")
                     {
                         CreateNoWindow = true
                     };
-                    await Process.Start(removeProcessInfo).WaitForExitAsync();
+                    await Process.Start(removeProcessInfo)?.WaitForExitAsync();
                 }
             }
 
@@ -103,11 +118,41 @@ namespace DylanDashboard.Anime
             await Task.Delay(10000);
             PollTorrentListAsync();
         }
+
+        private async void PollDownloadFilesAsync()
+        {
+            var files = Directory.GetFiles($"{ Environment.GetEnvironmentVariable("HOMEPATH") }\\Downloads", "*.mkv", new EnumerationOptions()
+            {
+                RecurseSubdirectories = true
+            });
+
+            var videoFiles = new List<VideoFile>();
+            foreach (var file in files)
+            {
+                videoFiles.Add(new VideoFile()
+                {
+                    FilePath = file
+                });
+            }
+
+            DownloadFilesUpdated?.Invoke(this, new DownloadFilesUpdateEventArgs()
+            {
+                VideoFiles = videoFiles
+            });
+
+            await Task.Delay(10000);
+            PollDownloadFilesAsync();
+        }
     }
 
     public class TorrentListUpdateEventArgs : EventArgs
     {   
         public string Error { get; set; }
         public List<Torrent> Torrents { get; set; }
+    }
+
+    public class DownloadFilesUpdateEventArgs : EventArgs
+    {
+        public List<VideoFile> VideoFiles { get; set; }
     }
 }

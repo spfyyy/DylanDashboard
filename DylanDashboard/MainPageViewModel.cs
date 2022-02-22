@@ -39,11 +39,51 @@ namespace DylanDashboard
             }
         }
 
+        private List<VideoFile> _videoFiles;
+        public List<VideoFile> VideoFiles
+        {
+            get
+            {
+                return _videoFiles;
+            }
+            set
+            {
+                _videoFiles = value;
+                _selectedVideoFile = _videoFiles.Find(vf => _selectedVideoFile != null && _selectedVideoFile.FilePath == vf.FilePath);
+                NotifyPropertyChanged(nameof(VideoFiles));
+                NotifyPropertyChanged(nameof(SelectedVideoFile));
+            }
+        }
+
+        private VideoFile _selectedVideoFile;
+        public VideoFile SelectedVideoFile
+        {
+            get
+            {
+                return _selectedVideoFile;
+            }
+            set
+            {
+                if (value != null)
+                {
+                    _selectedVideoFile = value;
+                }
+            }
+        }
+
         public event PropertyChangedEventHandler PropertyChanged;
 
         public MainPageViewModel()
         {
-            DownloadManager.GetIntance().TorrentListUpdated += OnTorrentListUpdated;
+            var dm = DownloadManager.GetIntance();
+            dm.TorrentListUpdated += OnTorrentListUpdated;
+            dm.DownloadFilesUpdated += OnDownloadFilesUpdated;
+            dm.StartPolling();
+        }
+
+        private void OnDownloadFilesUpdated(object sender, DownloadFilesUpdateEventArgs e)
+        {
+            VideoFiles = e.VideoFiles;
         }
 
         private void OnTorrentListUpdated(object sender, TorrentListUpdateEventArgs e)

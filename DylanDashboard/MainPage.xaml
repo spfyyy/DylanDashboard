@@ -20,7 +20,8 @@
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
             <Label Grid.Row="0"
                    Grid.Column="0"
@@ -28,7 +29,13 @@
             <ListView Grid.Row="{Binding TorrentListError, Converter={StaticResource optStringInc}, ConverterParameter=0}"
                       Grid.RowSpan="{Binding TorrentListError, Converter={StaticResource optStringDec}, ConverterParameter=2}"
                       Grid.Column="0"
+                      SelectionMode="None"
                       ItemsSource="{Binding TorrentList}" />
+            <ListView Grid.Row="0"
+                      Grid.RowSpan="2"
+                      Grid.Column="1"
+                      SelectedItem="{Binding SelectedVideoFile, Mode=TwoWay}"
+                      ItemsSource="{Binding VideoFiles}" />
         </Grid>
     </ScrollView>
 </ContentPage>
