@@ -39,7 +39,7 @@ namespace DylanDashboard
             }
         }
 
-        private List<VideoFile> _videoFiles;
+        private List<VideoFile> _videoFiles = new();
         public List<VideoFile> VideoFiles
         {
             get
@@ -55,8 +55,8 @@ namespace DylanDashboard
             }
         }
 
-        private VideoFile _selectedVideoFile;
-        public VideoFile SelectedVideoFile
+        private VideoFile? _selectedVideoFile;
+        public VideoFile? SelectedVideoFile
         {
             get
             {
@@ -71,7 +71,7 @@ namespace DylanDashboard
             }
         }
 
-        public event PropertyChangedEventHandler PropertyChanged;
+        public event PropertyChangedEventHandler? PropertyChanged;
 
         public MainPageViewModel()
         {
@@ -81,15 +81,15 @@ namespace DylanDashboard
             dm.StartPolling();
         }
 
-        private void OnDownloadFilesUpdated(object sender, DownloadFilesUpdateEventArgs e)
+        private void OnDownloadFilesUpdated(object? sender, DownloadFilesUpdateEventArgs e)
         {
-            VideoFiles = e.VideoFiles;
+            VideoFiles = e.VideoFiles ?? new();
         }
 
-        private void OnTorrentListUpdated(object sender, TorrentListUpdateEventArgs e)
+        private void OnTorrentListUpdated(object? sender, TorrentListUpdateEventArgs e)
         {
-            TorrentListError = e.Error;
-            TorrentList = e.Torrents;
+            TorrentListError = e.Error ?? "";
+            TorrentList = e.Torrents ?? new();
         }
 
         private void NotifyPropertyChanged(string prorpertyName)

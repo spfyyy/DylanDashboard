@@ -5,13 +5,13 @@ namespace DylanDashboard.Anime
 {
     public class DownloadManager
     {
-        private static DownloadManager _instance;
+        private static DownloadManager? _instance;
 
         private bool _isPolling;
 
-        public event EventHandler<TorrentListUpdateEventArgs> TorrentListUpdated;
+        public event EventHandler<TorrentListUpdateEventArgs>? TorrentListUpdated;
 
-        public event EventHandler<DownloadFilesUpdateEventArgs> DownloadFilesUpdated;
+        public event EventHandler<DownloadFilesUpdateEventArgs>? DownloadFilesUpdated;
 
         private DownloadManager() {
             _isPolling = false;
@@ -46,7 +46,7 @@ namespace DylanDashboard.Anime
                 RedirectStandardError = true
             };
 
-            var listProcess = Process.Start(listProcessInfo);
+            var listProcess = Utils.StartProcess(listProcessInfo);
             if (listProcess == null)
             {
                 TorrentListUpdated?.Invoke(this, new TorrentListUpdateEventArgs()
@@ -90,11 +90,14 @@ namespace DylanDashboard.Anime
             {
                 if (torrent.Status == "Seeding" || (torrent.CompletePercentage == 100 && torrent.Status == "Idle"))
                 {
-                    var removeProcessInfo = new ProcessStartInfo("transmission-remote", $"-t { torrent.Id } --remove")
+                    var removeProcess = Utils.StartProcess(new ProcessStartInfo("transmission-remote", $"-t { torrent.Id } --remove")
                     {
                         CreateNoWindow = true
-                    };
-                    await Process.Start(removeProcessInfo)?.WaitForExitAsync();
+                    });
+                    if (removeProcess != null)
+                    {
+                        await removeProcess.WaitForExitAsync();
+                    }
                 }
             }
 
@@ -147,12 +150,12 @@ namespace DylanDashboard.Anime
 
     public class TorrentListUpdateEventArgs : EventArgs
     {   
-        public string Error { get; set; }
-        public List<Torrent> Torrents { get; set; }
+        public string? Error { get; set; }
+        public List<Torrent>? Torrents { get; set; }
     }
 
     public class DownloadFilesUpdateEventArgs : EventArgs
     {
-        public List<VideoFile> VideoFiles { get; set; }
+        public List<VideoFile>? VideoFiles { get; set; }
     }
 }
