@@ -1,5 +1,6 @@
 ﻿using DylanDashboard.Anime;
 using System.ComponentModel;
+using System.Windows.Input;
 
 namespace DylanDashboard
 {
@@ -39,6 +40,37 @@ namespace DylanDashboard
             }
         }
 
+        private string _torrentAddError = "";
+        public string TorrentAddError
+        {
+            get
+            {
+                return _torrentAddError;
+            }
+            set
+            {
+                _torrentAddError = value;
+                NotifyPropertyChanged(nameof(TorrentAddError));
+            }
+        }
+
+        private string _torrentAddText = "";
+        public string TorrentAddText
+        {
+            get
+            {
+                return _torrentAddText;
+            }
+            set
+            {
+                _torrentAddText = value;
+                if (AddTorrentCommand is Command command)
+                {
+                    command.ChangeCanExecute();
+                }
+            }
+        }
+
         private List<VideoFile> _videoFiles = new();
         public List<VideoFile> VideoFiles
         {
@@ -71,14 +103,34 @@ namespace DylanDashboard
             }
         }
 
+        public ICommand AddTorrentCommand { get; private set; }
+
         public event PropertyChangedEventHandler? PropertyChanged;
 
         public MainPageViewModel()
         {
             var dm = DownloadManager.GetIntance();
+
+            AddTorrentCommand = new Command(() =>
+            {
+                TorrentAddError = "";
+                dm.AddTorrentsAsync(TorrentAddText.Trim().Split("\r").ToList());
+                TorrentAddText = "";
+                NotifyPropertyChanged(nameof(TorrentAddText));
+            }, () =>
+            {
+                return TorrentAddText.Length > 0;
+            });
+
             dm.TorrentListUpdated += OnTorrentListUpdated;
             dm.DownloadFilesUpdated += OnDownloadFilesUpdated;
+            dm.AddTorrentsErrorEvent += OnAddTorrentsErrorEvent;
             dm.StartPolling();
+        }
+
+        private void OnAddTorrentsErrorEvent(object? sender, AddTorrentsErrorEventArgs e)
+        {
+            TorrentAddError = e.Error ?? "";
         }
 
         private void OnDownloadFilesUpdated(object? sender, DownloadFilesUpdateEventArgs e)

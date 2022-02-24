@@ -13,6 +13,8 @@ namespace DylanDashboard.Anime
 
         public event EventHandler<DownloadFilesUpdateEventArgs>? DownloadFilesUpdated;
 
+        public event EventHandler<AddTorrentsErrorEventArgs>? AddTorrentsErrorEvent;
+
         private DownloadManager() {
             _isPolling = false;
         }
@@ -70,10 +72,15 @@ namespace DylanDashboard.Anime
                 if (outLine != null && !headerRegex.IsMatch(outLine) && !sumRegex.IsMatch(outLine))
                 {
                     var torrentData = Regex.Split(outLine.Trim(), @"\s\s+");
+                    var completePercentage = 0;
+                    try
+                    {
+                        completePercentage = Convert.ToInt32(torrentData[1].Split('%')[0]);
+                    } catch { }
                     torrents.Add(new Torrent()
                     {
                         Id = Convert.ToInt32(torrentData[0]),
-                        CompletePercentage = Convert.ToInt32(torrentData[1].Split('%')[0]),
+                        CompletePercentage = completePercentage,
                         Status = torrentData[7],
                         Title = torrentData[8]
                     });
@@ -88,7 +95,7 @@ namespace DylanDashboard.Anime
 
             foreach (var torrent in torrents)
             {
-                if (torrent.Status == "Seeding" || (torrent.CompletePercentage == 100 && torrent.Status == "Idle"))
+                if (torrent.Status == "Seeding")
                 {
                     var removeProcess = Utils.StartProcess(new ProcessStartInfo("transmission-remote", $"-t { torrent.Id } --remove")
                     {
@@ -146,6 +153,37 @@ namespace DylanDashboard.Anime
             await Task.Delay(10000);
             PollDownloadFilesAsync();
         }
+
+        public async void AddTorrentsAsync(List<string> torrents)
+        {
+            var errors = new List<string>();
+            foreach (var torrent in torrents)
+            {
+                var addTorrentInfo = new ProcessStartInfo("transmission-remote", $"--add \"{ torrent }\"")
+                {
+                    CreateNoWindow = true,
+                    RedirectStandardOutput = true
+                };
+                var addTorrentProcess = Utils.StartProcess(addTorrentInfo);
+                if (addTorrentProcess == null)
+                {
+                    errors.Add($"Failed to create process for: { addTorrentInfo.FileName } { addTorrentInfo.Arguments }");
+                    continue;
+                }
+                var errorOutput = await addTorrentProcess.StandardOutput.ReadToEndAsync();
+                if (addTorrentProcess.ExitCode != 0)
+                {
+                    errors.Add(errorOutput.Trim());
+                }
+            }
+            if (errors.Count > 0)
+            {
+                AddTorrentsErrorEvent?.Invoke(this, new AddTorrentsErrorEventArgs()
+                {
+                    Error = string.Join(Environment.NewLine, errors)
+                });
+            }
+        }
     }
 
     public class TorrentListUpdateEventArgs : EventArgs
@@ -157,5 +195,10 @@ namespace DylanDashboard.Anime
     public class DownloadFilesUpdateEventArgs : EventArgs
     {
         public List<VideoFile>? VideoFiles { get; set; }
+    }
+
+    public class AddTorrentsErrorEventArgs : EventArgs
+    {
+        public string? Error { get; set; }
     }
 }

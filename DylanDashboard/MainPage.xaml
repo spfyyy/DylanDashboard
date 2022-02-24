@@ -17,22 +17,34 @@
         <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="auto" />
+                <RowDefinition Height="auto" />
+                <RowDefinition Height="auto" />
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="2*" />
             </Grid.ColumnDefinitions>
-            <Label Grid.Row="0"
-                   Grid.Column="0"
+            <Label MaxLines="5"
+                   Text="{Binding TorrentAddError}" />
+            <StackLayout Grid.Row="{Binding TorrentAddError, Converter={StaticResource optStringInc}, ConverterParameter=0}"
+                         Grid.RowSpan="{Binding TorrentAddError, Converter={StaticResource optStringDec}, ConverterParameter=2}"
+                         Orientation="Horizontal"
+                         HorizontalOptions="Fill">
+                <Editor Placeholder="Add torrent(s)"
+                        HorizontalOptions="FillAndExpand"
+                        Text="{Binding TorrentAddText, Mode=TwoWay}" />
+                <Button Text="Add"
+                        Command="{Binding AddTorrentCommand}" />
+            </StackLayout>
+            <Label Grid.Row="2"
                    Text="{Binding TorrentListError}" />
-            <ListView Grid.Row="{Binding TorrentListError, Converter={StaticResource optStringInc}, ConverterParameter=0}"
+            <ListView Grid.Row="{Binding TorrentListError, Converter={StaticResource optStringInc}, ConverterParameter=2}"
                       Grid.RowSpan="{Binding TorrentListError, Converter={StaticResource optStringDec}, ConverterParameter=2}"
-                      Grid.Column="0"
                       SelectionMode="None"
                       ItemsSource="{Binding TorrentList}" />
             <ListView Grid.Row="0"
-                      Grid.RowSpan="2"
+                      Grid.RowSpan="4"
                       Grid.Column="1"
                       SelectedItem="{Binding SelectedVideoFile, Mode=TwoWay}"
                       ItemsSource="{Binding VideoFiles}" />
